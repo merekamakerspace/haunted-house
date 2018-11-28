@@ -18,7 +18,7 @@ int SOUND_PINS[] = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
 int ANALOG_PINS[] = {3, 4, 5, 6, 7};
 
 
-#define NUM_INPUT_PINS 5
+#define NUM_INPUT_PINS 16
 int INPUT_PINS[] = {9, 10, 11, 12, 13,
                     A0, A1, A2, A3, A4, A5, A6, A7,
                     A8, A9, A10, A11, A12, A13, A14, A15
