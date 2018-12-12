@@ -27,6 +27,7 @@ int INPUT_PINS[] = {9, 10, 11, 12, 13,
 #define DEBOUNCE_TIME 100
 
 unsigned long input_timeouts[NUM_INPUT_PINS];
+bool sent_input[NUM_INPUT_PINS];
 
 int inputVals[NUM_INPUT_PINS];
 
@@ -212,6 +213,8 @@ void setup() {
   for (int i = 0; i < NUM_INPUT_PINS; i++) {
     pinMode(INPUT_PINS[i], INPUT);
     inputVals[i] = 0;
+    input_timeouts[i] = 0;
+    sent_input[i] = false;
   }
 
   leds[0] = CRGB::Black;
@@ -224,23 +227,25 @@ void checkInputs() {
   for (int i = 0; i < NUM_INPUT_PINS; i++) {
     int val = digitalRead(INPUT_PINS[i]);
     //reset debounce time if low
-    if(val == LOW){
-      input_timeouts[i] = millis();
-    }
     if (val != inputVals[i]) {
       inputVals[i] = val;
-      // only send highs for remote
       if (val == HIGH) {
-        //only send if it has been High for 
-        if(millis() - input_timeouts[i] > DEBOUNCE_TIME){
+        // Reset Debounce time
+        sent_input[i] = false;
+        input_timeouts[i] = millis();
+
+      }
+    }
+
+    if(val == HIGH && millis() - input_timeouts[i] > DEBOUNCE_TIME && !sent_input[i]){
             //send pin
           Serial.print("i,");
           Serial.print(INPUT_PINS[i]);
           Serial.print(",");
           Serial.println(val);
-        }
-      }
+          sent_input[i] = true;
     }
+
 
   }
 }
