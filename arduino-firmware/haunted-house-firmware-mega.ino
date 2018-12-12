@@ -18,12 +18,15 @@ int SOUND_PINS[] = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53};
 int ANALOG_PINS[] = {3, 4, 5, 6, 7};
 
 
-#define NUM_INPUT_PINS 16
+#define NUM_INPUT_PINS 21
 int INPUT_PINS[] = {9, 10, 11, 12, 13,
                     A0, A1, A2, A3, A4, A5, A6, A7,
                     A8, A9, A10, A11, A12, A13, A14, A15
                    };
 
+#define DEBOUNCE_TIME 100
+
+unsigned long input_timeouts[NUM_INPUT_PINS];
 
 int inputVals[NUM_INPUT_PINS];
 
@@ -64,7 +67,7 @@ void playSound(int snd) {
   Serial.print(snd);
   Serial.print(",");
   Serial.println(SOUND_PIN_START + snd - 1);
-  
+
 
 }
 
@@ -109,71 +112,71 @@ void serialEvent() {
 
     char inp = Serial.read();
     switch (inp) {
-      case 'd':
-        if (Serial.available() > 2) {
-          pin = Serial.parseInt();
-          //Serial.print("pin:");
-          //Serial.println(pin);
-          val = Serial.parseInt();
-          //Serial.print("val:");
-          //Serial.println(val);
-          setDigitalPin(pin, val);
-        }
-        break;
-      case 'a':
-        if (Serial.available() > 2) {
-          pin = Serial.parseInt();
-          //Serial.print("pin:");
-          //Serial.println(pin);
-          val = Serial.parseInt();
-          //Serial.print("val:");
-          //Serial.println(val);
-          setAnalogPin(pin, val);
-        }
-
-        break;
-      case 'l':
-        if (Serial.available() > 2) {
-          pin = Serial.parseInt();
-          val = Serial.parseInt();
-          Serial.print("l,");
-          switch (val) {
-            case 0:
-              leds[0] = CRGB::Black;
-              Serial.println("OFF");
-              break;
-            case 1:
-              leds[0] = CRGB::Red;
-              Serial.println("Red");
-              break;
-            case 2:
-              leds[0] = CRGB::Orange;
-              Serial.println("Yellow");
-              break;
-            case 3:
-              leds[0] = CRGB::Green;
-              Serial.println("Green");
-              break;
-            default:
-
-              Serial.println(val);
-
-          }
-
-          FastLED.show();
-        }
-        break;
-
-      case 's':
-        val = Serial.parseInt();
+    case 'd':
+      if (Serial.available() > 2) {
         pin = Serial.parseInt();
-        
-        playSound(val);
-        break;
+        //Serial.print("pin:");
+        //Serial.println(pin);
+        val = Serial.parseInt();
+        //Serial.print("val:");
+        //Serial.println(val);
+        setDigitalPin(pin, val);
+      }
+      break;
+    case 'a':
+      if (Serial.available() > 2) {
+        pin = Serial.parseInt();
+        //Serial.print("pin:");
+        //Serial.println(pin);
+        val = Serial.parseInt();
+        //Serial.print("val:");
+        //Serial.println(val);
+        setAnalogPin(pin, val);
+      }
 
-      default:
-        Serial.print("Invalid Input: ");
-        Serial.println(inp);
+      break;
+    case 'l':
+      if (Serial.available() > 2) {
+        pin = Serial.parseInt();
+        val = Serial.parseInt();
+        Serial.print("l,");
+        switch (val) {
+        case 0:
+          leds[0] = CRGB::Black;
+          Serial.println("OFF");
+          break;
+        case 1:
+          leds[0] = CRGB::Red;
+          Serial.println("Red");
+          break;
+        case 2:
+          leds[0] = CRGB::Orange;
+          Serial.println("Yellow");
+          break;
+        case 3:
+          leds[0] = CRGB::Green;
+          Serial.println("Green");
+          break;
+        default:
+
+          Serial.println(val);
+
+        }
+
+        FastLED.show();
+      }
+      break;
+
+    case 's':
+      val = Serial.parseInt();
+      pin = Serial.parseInt();
+
+      playSound(val);
+      break;
+
+    default:
+      Serial.print("Invalid Input: ");
+      Serial.println(inp);
     }
   }
 }
@@ -220,27 +223,25 @@ void setup() {
 void checkInputs() {
   for (int i = 0; i < NUM_INPUT_PINS; i++) {
     int val = digitalRead(INPUT_PINS[i]);
+    //reset debounce time if low
+    if(val == LOW){
+      input_timeouts[i] = millis();
+    }
     if (val != inputVals[i]) {
       inputVals[i] = val;
       // only send highs for remote
-      if (INPUT_PINS[i] == 49) {
-        if (val == 0) {
-          if (millis() - last_send_ops > 500) {
-            Serial.println("i,49,1");
-            last_send_ops = millis();
-          }
-
+      if (val == HIGH) {
+        //only send if it has been High for 
+        if(millis() - input_timeouts[i] > DEBOUNCE_TIME){
+            //send pin
+          Serial.print("i,");
+          Serial.print(INPUT_PINS[i]);
+          Serial.print(",");
+          Serial.println(val);
         }
-
-      } else if (val) {
-        Serial.print("i,");
-        Serial.print(INPUT_PINS[i]);
-        Serial.print(",");
-        Serial.println(val);
-
       }
-
     }
+
   }
 }
 
